@@ -2,6 +2,8 @@
 
 本仓库用于同步 Bestar 工时应用的代码和可分发文档。数据库、员工考勤文件、生成结果与本机环境不通过 GitHub 同步。应用本身不需要登录；这里的 GitHub 登录只用于开发者推送代码。
 
+当前项目仓库：[xiaokh31/bestar-work-hours](https://github.com/xiaokh31/bestar-work-hours)，同步分支为 `main`。
+
 ## 1. 哪些文件提交，哪些忽略
 
 | 类别 | 处理 | 原因 |
@@ -78,10 +80,10 @@ git commit -m 'Initial standalone work-hours application'
 
 使用你提供或在 GitHub 创建的独立工时仓库地址。公司项目通常使用 Private；不要误用旧系统仓库。新建空仓库时不要预先添加 README、许可证或 .gitignore，以便接收本项目首个提交。参见 [将本地项目加入 GitHub](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github)。
 
-先将示例地址替换为真实地址：
+本项目已确定的远程地址如下；同步其他项目时再替换：
 
 ```powershell
-$RemoteUrl = 'https://github.com/OWNER/REPOSITORY.git'
+$RemoteUrl = 'https://github.com/xiaokh31/bestar-work-hours.git'
 git remote -v
 git ls-remote $RemoteUrl
 ```
@@ -130,6 +132,6 @@ git push
 
 有远程新增内容时先整合；没有变化时不需要空提交。上传失败不影响本机已有提交，修好网络/认证后重试即可。
 
-另一台公司 Windows 电脑使用 `git clone <真实仓库地址>` 获取代码，随后按 [部署手册](DEPLOYMENT.md) 自建 `.env` 并启动 Docker。**克隆代码不会带回数据库中的工时记录**；需要迁移已有业务数据时，使用部署手册中的 PostgreSQL 备份与恢复流程。
+另一台公司 Windows 电脑使用 `git clone https://github.com/xiaokh31/bestar-work-hours.git` 获取代码，随后按 [部署手册](DEPLOYMENT.md) 自建 `.env` 并启动 Docker。**克隆代码不会带回数据库中的工时记录**；需要迁移已有业务数据时，使用部署手册中的 PostgreSQL 备份与恢复流程。
 
 GitHub 同步不等于 Vercel 发布，也不会备份 Docker volume。若另行将仓库接入自动部署，推送行为可能触发该平台配置的构建；发布配置单独管理。
