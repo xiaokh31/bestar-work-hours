@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -305,6 +305,18 @@ def generate_wage_record(
             message="No matched employee work days were written to the wage template.",
             warnings=tuple(warnings),
         )
+
+    if slot_template:
+        used_indexes = {contract.sheetIndex for contract, _ in matches}
+        unused_indexes = {contract.sheetIndex for contract in standard_sheets} - used_indexes
+        retained = tuple(index for index in range(readable.nsheets) if index not in unused_indexes)
+        editor.retain_sheets(retained)
+        output_sheet_names = [output_sheet_names[index] for index in retained]
+        output_indexes = {old: new for new, old in enumerate(retained)}
+        written_sheet_validations = [
+            replace(validation, sheetIndex=output_indexes[validation.sheetIndex])
+            for validation in written_sheet_validations
+        ]
 
     output_path = output_dir / _output_filename(
         attendance_result.periodStart,

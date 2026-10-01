@@ -121,7 +121,7 @@ def test_upload_parse_export_survive_new_instance_without_session(system, tmp_pa
         assert response.headers["content-type"] == "application/vnd.ms-excel"
         assert response.headers["cache-control"] == "no-store"
         book = xlrd.open_workbook(file_contents=response.content)
-        assert book.nsheets == 17
+        assert book.nsheets == 3
         assert book.sheet_by_index(0).cell_value(3, 2) == 8.5
         assert book.sheet_by_index(0).cell_value(34, 2) == 255
         assert fresh.get("/attendance-imports").json()["items"][0]["id"] == import_id

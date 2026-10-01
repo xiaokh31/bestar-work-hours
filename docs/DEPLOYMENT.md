@@ -5,58 +5,38 @@
 Vercel 继续作为另一部署目标，与本地共用业务代码。
 应用无需登录和账户配置，打开后直接上传考勤表、计算复核工时、生成并下载 Excel。访问同一部署地址的人共用该部署中的工时记录。
 
-## 一、先在本机验证（当前推荐入口）
+## 一、本机使用与验证
 
-本项目提供 Windows 验证脚本。在 Docker Desktop 已启动的情况下执行：
+首次使用按第三节创建 `.env` 并启动正式应用，上传自己的真实打卡表。项目不会预装员工记录。
+生成的 Excel 只保留本次有效员工的表页及正式模板的 `ADJUSTMENTS` 辅助页；未使用的 `EMPLOYEE-xx` 占位页不会导出。
+
+已在旧版 `http://localhost:3100` 上传真实表格的本机，请继续使用现有 `.env.smoke` 和 Compose 项目名 `bestar-hours-smoke`。
+这些名称是历史遗留，当前数据库可包含真实业务数据；更换项目名会连接另一个 volume，不能当作数据迁移方式。
+不要执行 `down -v`、重置数据库或再次运行旧版填充测试记录的脚本。正常更新和启动如下：
 
 ```powershell
 Set-Location 'D:\works\github\bestar-work-hours'
+docker compose --env-file .env.smoke -p bestar-hours-smoke up --build -d
+docker compose --env-file .env.smoke -p bestar-hours-smoke ps
+Invoke-RestMethod -Uri 'http://localhost:3100/api/health'
+```
+
+使用 `localhost`，不要混用 `127.0.0.1`：APP_ORIGIN 校验完整 origin。
+需要将旧版已有业务数据迁移到其他电脑或新的部署配置时，按第六节备份恢复，同时核对记录数量和源文件 SHA-256。
+
+开发者可在 Docker Desktop 已启动时单独运行回归验证：
+
+```powershell
 .\scripts\verify-docker.ps1
 ```
 
-脚本自动定位 Docker CLI，兼容安装后当前 PATH 未更新的情况。它将：
-
-1. 检查 Docker 正在运行 Linux 容器。
-2. 构建并运行独立引擎/API 的 PostgreSQL + SQLite 合成回归测试。
-3. 初始化或复用忽略的 `.env.smoke`，启动 `bestar-hours-smoke` 完整应用。
-4. 使用容器内 Python 执行真实 HTTP 上传、SHA-256 去重、解析、修正、删除、重解析及 XLS 下载验证。
-5. 重启数据库/API/Web，核对有效明细和同一 Excel 文件仍可用。
-6. 清理临时测试容器，**保留应用运行**，供人工验证。
-
-不需要在宿主安装 Python/Node，也不会覆盖正式 `.env`、修改 Windows 防火墙、切换 Docker 后端或发布云服务。
-已有 `.env.smoke` 不符合固定合成测试配置时，脚本会停下并保留文件。
+脚本自动定位 Docker CLI、检查 Linux 容器，然后在 `bestar-hours-test` 的独立网络、无宿主端口、tmpfs 数据库中运行引擎/API 测试。
+结束后删除临时测试容器；不会启动、重启或写入日常使用的工时应用，也不会创建测试 Excel 到项目目录。
+合成边界用例只在临时测试环境生成，不作为业务记录。旧的 `docker-verify.py`、`create-e2e-fixture.py` 已移除。
 如果公司策略限制 PowerShell 脚本执行，请由 IT 按现行策略批准该本地脚本；本文不要求更改全局执行策略。
 
-测试入口（仅用于这台电脑的合成数据验证）：
-
-| 项目 | 值 |
-| --- | --- |
-| 地址 | http://localhost:3100/work-hours |
-| 绑定 | 127.0.0.1:3100，仅本机 |
-| 源文件、导出、验证结果 | storage\docker-verification\ |
-| Compose 项目 | bestar-hours-smoke |
-
-测试环境包含有标记的合成记录，正式使用按下节配置独立数据库。
-浏览器必须使用 `localhost`，不要混用 `127.0.0.1`：APP_ORIGIN 校验完整 origin，错误地址可能导致上传返回 403。
-测试库有独立持久 volume。重复验证会增加有标记的合成记录；按 SHA-256 检查的旧文件仍会被正确判重。
-
-人工验证步骤：
-
-- 直接打开工时页，切换中文/英文、浅色/深色主题。
-- 在考勤列表查看 `synthetic-*.xls`，检查员工明细、修正与删除历史。
-- 选择尚未上传的获准合成 `.xls`，上传并解析；同一文件再次上传应提示重复。
-- 修改某一天的打卡并填写理由，重新生成；旧导出应失效。
-- 下载 Excel，用本机 Excel 检查日期、工时、公式和打印预览。
-- 更完整的真实/脱敏业务验收，请使用下节独立正式配置。
-
-管理本机验证服务（从项目根目录执行）：
-
-```powershell
-docker compose --env-file .env.smoke -p bestar-hours-smoke ps
-docker compose --env-file .env.smoke -p bestar-hours-smoke logs --tail 100 api web
-docker compose --env-file .env.smoke -p bestar-hours-smoke stop
-docker compose --env-file .env.smoke -p bestar-hours-smoke up -d
-```
+人工验收使用获准的真实打卡文件：核对员工数量、日期与工时，下载 Excel，在本机 Excel 中检查公式重算和打印预览。
+不要为验证而修改真实打卡；确需复核修正时使用业务认可的理由，保留变更历史。
 
 ## 二、公司 Windows 电脑的准备
 
@@ -273,9 +253,10 @@ PostgreSQL 使用短连接 NullPool；云数据库可按供应商支持情况使
 docker compose -p bestar-hours-test -f compose.test.yaml up --build --abort-on-container-exit --exit-code-from engine-tests
 ```
 
-测试栈数据库使用 tmpfs 和明确合成凭据，不是生产部署。47 项测试包含 PostgreSQL 与 SQLite。
+测试栈数据库使用 tmpfs 和明确合成凭据，与业务环境隔离；52 项测试包含 PostgreSQL 与 SQLite。
 Web：在 apps/web 执行 npm ci、npm run typecheck、npm run build。
-浏览器测试需要本机 Edge（Windows）或 Playwright Chromium（其他系统）、一个用合成测试配置启动的隔离应用、以及合成样例。
-在根目录用已安装引擎的 Python 执行 `scripts/create-e2e-fixture.py`，再在 apps/web 执行 `npm run test:e2e`。
-默认 TEST_WEB_URL=http://localhost:3100，无需配置账号；详见测试源码。每次复测先生成新的合成 fixture，以避免真实 SHA-256 去重正常拦截。
-所有运行数据、dump、截图、trace 和环境文件均被 Git 忽略。
+浏览器测试需要本机 Edge（Windows）或 Playwright Chromium（其他系统），执行 `npm --prefix apps/web run test:e2e`。
+默认 TEST_WEB_URL=http://localhost:3100，可设为当前实际部署地址；只读取已有记录与下载文件，不上传、修正、删除或生成业务数据。
+没有导入记录时仅检查空页面、免登录、主题和语言；真实业务验收需另行核对真实文件。
+默认关闭 screenshot、video 和 trace，避免把员工明细写入测试产物；下载内容只在内存检查。
+所有运行数据、dump、截图、trace 和环境文件均被 Git 忽略；真实数据不得改为测试 fixture 或提交到 GitHub。

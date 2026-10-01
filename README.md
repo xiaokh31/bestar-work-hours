@@ -8,7 +8,9 @@ PostgreSQL 事务保存原件、有效明细、变更记录和生成文件。无
 
 ## Windows 本机验证
 
-在项目根目录的 PowerShell 执行 `.\scripts\verify-docker.ps1`，仅需已运行的 Docker Desktop（Linux 容器）。脚本运行测试并启动 http://localhost:3100，完成后保留服务供人工验证。无需账号；公司内网部署步骤见部署手册。
+按[部署手册](docs/DEPLOYMENT.md)启动 Docker 应用，上传自己的真实打卡表。无需账号，不预装测试员工。导出只包含实际员工表页及模板辅助页。
+
+`.\scripts\verify-docker.ps1` 仅执行隔离的临时回归测试，结束后清理测试环境，不向实际应用写入数据。已在 localhost:3100 使用旧配置的本机继续沿用原 Compose 项目与 volume，操作见部署手册第一节。
 
 ## 运行与验证
 
@@ -24,6 +26,6 @@ PostgreSQL 事务保存原件、有效明细、变更记录和生成文件。无
 docker compose -p bestar-hours-test -f compose.test.yaml up --build --abort-on-container-exit --exit-code-from engine-tests
 ```
 
-2026-10-01：Docker 引擎/API 测试 47 项通过；完整 Compose 构建运行、浏览器合成闭环已通过。
-真实/获准脱敏样例、Excel 打开与打印预览、实际 Vercel 发布仍待验收，不能据此声称全部完成。
+2026-10-01：Docker 引擎/API 测试 52 项通过，覆盖未使用员工模板页的移除及公式、格式和打印设置保留。
+真实业务工时对照、Excel 打开与打印预览、实际 Vercel 发布仍需验收，不能据此声称全部完成。
 GitHub 同步只包含代码、可分发文档与正式脱敏模板，不含真实员工记录或数据库。同步代码不等于发布应用；Vercel 部署仍需单独操作。

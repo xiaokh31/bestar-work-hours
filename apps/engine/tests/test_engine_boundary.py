@@ -86,7 +86,7 @@ def test_generate_command_preserves_original_and_produces_auditable_xls(tmp_path
     manifest = json.loads((output / "wage_record_manifest.json").read_text(encoding="utf-8"))
     assert manifest["records"][0]["sha256"] == report["outputSha256"]
     book = xlrd.open_workbook(generated, formatting_info=True)
-    assert book.nsheets == 17
+    assert book.nsheets == 3
     first = book.sheet_by_name(report["matchedSheets"][0])
     assert first.cell_value(3, 1) == "2026.6.1"
     assert first.cell_value(3, 2) == 8.5

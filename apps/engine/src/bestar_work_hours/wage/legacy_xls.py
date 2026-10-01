@@ -85,8 +85,17 @@ class LegacyXlsTemplateEditor:
         self.workbook = xlrd.open_workbook(template_path, formatting_info=True)
         self._writes: dict[int, dict[tuple[int, int], _CellWrite]] = {}
         self._sheet_names: dict[int, str] = {}
+        self._retained_sheets: tuple[int, ...] | None = None
         self._update_dimensions = update_dimensions
         self._sanitize_shared_strings = sanitize_shared_strings
+
+    def retain_sheets(self, indexes: tuple[int, ...]) -> None:
+        """Keep selected sheets in their original order, preserving their BIFF cells."""
+        if not indexes or tuple(sorted(set(indexes))) != indexes or any(
+            index < 0 or index >= self.workbook.nsheets for index in indexes
+        ):
+            raise ValueError("WAGE_TEMPLATE_SHEET_SELECTION_INVALID")
+        self._retained_sheets = indexes
 
     def rename_sheet(self, sheet_index: int, name: str) -> None:
         if not 0 <= sheet_index < self.workbook.nsheets:
@@ -193,6 +202,10 @@ class LegacyXlsTemplateEditor:
                 )
             )
 
+        if self._retained_sheets is not None:
+            global_records = _retain_sheet_directory(global_records, self._retained_sheets)
+            patched_sheets = [patched_sheets[index] for index in self._retained_sheets]
+
         if self._sanitize_shared_strings:
             global_records = _without_shared_string_records(global_records)
             for records in patched_sheets:
@@ -230,6 +243,7 @@ class LegacyXlsTemplateEditor:
         expected_sheet_names = [
             self._sheet_names.get(index, name)
             for index, name in enumerate(self.workbook.sheet_names())
+            if self._retained_sheets is None or index in self._retained_sheets
         ]
         if verification.sheet_names() != expected_sheet_names:
             raise ValueError("WAGE_TEMPLATE_OUTPUT_SHEET_DIRECTORY_MISMATCH")
@@ -290,6 +304,63 @@ class LegacyXlsTemplateEditor:
             height_updates[sheet_index] = sheet_heights
 
         return width_updates, height_updates
+
+
+def _retain_sheet_directory(
+    records: list[_BiffRecord], retained: tuple[int, ...],
+) -> list[_BiffRecord]:
+    # MS-XLS BoundSheet8, XTI, Lbl, RRTabId and Window1 use sheet indexes.
+    # Keep XTI indexes stable so existing formula tokens need no rewriting.
+    mapping = {old: new for new, old in enumerate(retained)}
+    internal_books = {
+        index for index, record in enumerate(r for r in records if r.record_id == 0x01AE)
+        if len(record.payload) >= 4 and record.payload[2:4] == b"\x01\x04"
+    }
+    output: list[_BiffRecord] = []
+    sheet_index = 0
+    for record in records:
+        payload = bytearray(record.payload)
+        if record.record_id == BIFF_BOUNDSHEET:
+            keep = sheet_index in mapping
+            sheet_index += 1
+            if not keep:
+                continue
+        elif record.record_id == 0x0017:  # ExternSheet / XTI
+            count = struct.unpack_from("<H", payload)[0]
+            if len(payload) != 2 + 6 * count:
+                raise ValueError("WAGE_TEMPLATE_SHEET_REFERENCES_INVALID")
+            for offset in range(2, len(payload), 6):
+                book, first, last = struct.unpack_from("<Hhh", payload, offset)
+                if book in internal_books and first >= 0:
+                    remaining = [index for index in retained if first <= index <= last]
+                    first, last = ((mapping[remaining[0]], mapping[remaining[-1]])
+                                   if remaining else (-1, -1))
+                    struct.pack_into("<hh", payload, offset + 2, first, last)
+        elif record.record_id == 0x0018:  # Lbl's itab is one-based; zero is global.
+            scope = struct.unpack_from("<H", payload, 8)[0]
+            if scope:
+                if scope - 1 not in mapping:
+                    # Approved template only has built-in print names, never names
+                    # referenced by cell formulas. Fail closed for other templates.
+                    flags = struct.unpack_from("<H", payload)[0]
+                    if not flags & 0x20 or payload[15] not in (6, 7, 13):
+                        raise ValueError("WAGE_TEMPLATE_UNSUPPORTED_REMOVED_NAME")
+                    continue
+                struct.pack_into("<H", payload, 8, mapping[scope - 1] + 1)
+        elif record.record_id == 0x013D:  # RRTabId: unique stable sheet identifiers.
+            ids = list(struct.unpack("<" + "H" * (len(payload) // 2), payload))
+            next_id = max(ids, default=0) + 1
+            while len(ids) <= max(retained):
+                ids.append(next_id)
+                next_id += 1
+            payload = bytearray(struct.pack("<" + "H" * len(retained), *(ids[i] for i in retained)))
+        elif record.record_id == 0x003D:  # Window1 selected/first visible tab.
+            for offset in (10, 12):
+                old = struct.unpack_from("<H", payload, offset)[0]
+                struct.pack_into("<H", payload, offset, mapping.get(old, 0))
+            struct.pack_into("<H", payload, 14, 1)
+        output.append(_BiffRecord(record.record_id, bytes(payload)))
+    return output
 
 
 def _normalized_cell_value(value: Any) -> str | float | int | None:

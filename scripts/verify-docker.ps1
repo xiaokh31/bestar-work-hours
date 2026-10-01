@@ -22,56 +22,20 @@ function Invoke-Docker {
     & $DockerExe @DockerArguments
     if ($LASTEXITCODE -ne 0) { throw "Docker command failed (exit $LASTEXITCODE). Existing data has been preserved." }
 }
-$PreviousEnvironment = @{}
-foreach ($Name in @('WEB_BIND_ADDRESS', 'WEB_PORT', 'APP_ORIGIN')) {
-    $PreviousEnvironment[$Name] = [Environment]::GetEnvironmentVariable($Name, 'Process')
-}
+# This stack has a separate network and a tmpfs database, without host ports.
+# Never seed or restart the application that holds the user's attendance records.
+$TestCompose = @('compose', '-p', 'bestar-hours-test', '-f', 'compose.test.yaml')
 Push-Location $ProjectRoot
 try {
     $EngineType = Invoke-Docker -DockerArguments @('info', '--format', '{{.OSType}}')
     if (($EngineType -join '').Trim() -ne 'linux') { throw 'Select Linux containers in Docker Desktop before running this project.' }
-    Write-Host '1/5 Docker integration tests (isolated synthetic database)'
-    $TestCompose = @('compose', '-p', 'bestar-hours-test', '-f', 'compose.test.yaml')
-    Invoke-Docker -DockerArguments ($TestCompose + @('up', '--build', '--abort-on-container-exit', '--exit-code-from', 'engine-tests'))
-
-    $Image = 'bestar-hours-test-engine-tests'
-    $ScriptPath = Join-Path $PSScriptRoot 'docker-verify.py'
-    $ScriptMount = "type=bind,source=$ScriptPath,target=/verification.py,readonly"
-    $EnvFile = Join-Path $ProjectRoot '.env.smoke'
-    if (-not (Test-Path -LiteralPath $EnvFile)) {
-        $EnvLines = Invoke-Docker -DockerArguments @('run', '--rm', '--mount', $ScriptMount, $Image, 'python', '/verification.py', 'init')
-        [System.IO.File]::WriteAllText($EnvFile, ($EnvLines -join "`n"), [System.Text.UTF8Encoding]::new($false))
+    Write-Host 'Run isolated, temporary engine/API regression tests.'
+    try {
+        Invoke-Docker -DockerArguments ($TestCompose + @('up', '--build', '--abort-on-container-exit', '--exit-code-from', 'engine-tests'))
+    } finally {
+        Invoke-Docker -DockerArguments ($TestCompose + @('down'))
     }
-    $EnvText = Get-Content -Raw -LiteralPath $EnvFile
-    foreach ($Line in @('APP_ORIGIN=http://localhost:3100', 'WEB_PORT=3100')) {
-        if (($EnvText -split '\r?\n') -notcontains $Line) { throw '.env.smoke does not match this isolated test profile. It has not been changed.' }
-    }
-    if ($EnvText -match '(?m)^WEB_BIND_ADDRESS=(?!127\.0\.0\.1\s*$).+') { throw 'The synthetic test profile must bind only to 127.0.0.1.' }
-    # Override possible inherited environment settings for this verification process only.
-    $env:WEB_BIND_ADDRESS = '127.0.0.1'
-    $env:WEB_PORT = '3100'
-    $env:APP_ORIGIN = 'http://localhost:3100'
-    $AppCompose = @('compose', '--env-file', '.env.smoke', '-p', 'bestar-hours-smoke')
-    Write-Host '2/5 Build and start the local Windows Docker deployment'
-    Invoke-Docker -DockerArguments ($AppCompose + @('up', '--build', '-d'))
-
-    $OutputPath = Join-Path $ProjectRoot 'storage\docker-verification'
-    New-Item -ItemType Directory -Force -Path $OutputPath | Out-Null
-    $RunArgs = @('run', '--rm', '--network', 'bestar-hours-smoke_default', '--mount', $ScriptMount,
-        '--mount', "type=bind,source=$OutputPath,target=/out", $Image, 'python', '/verification.py')
-    Write-Host '3/5 Verify the real HTTP upload-to-download flow'
-    Invoke-Docker -DockerArguments ($RunArgs + @('run'))
-    Write-Host '4/5 Restart services and verify effective rows and XLS'
-    Invoke-Docker -DockerArguments ($AppCompose + @('restart', 'database', 'api', 'web'))
-    Invoke-Docker -DockerArguments ($RunArgs + @('resume'))
-    Write-Host '5/5 Remove only the ephemeral test containers; leave the application running'
-    Invoke-Docker -DockerArguments ($TestCompose + @('down'))
-    Invoke-Docker -DockerArguments ($AppCompose + @('ps'))
-    Write-Host 'READY: http://localhost:3100/work-hours'
-    Write-Host 'Application stays running without login. This profile contains synthetic test records.'
+    Write-Host 'PASS: Temporary test data removed. The attendance application was not modified.'
 } finally {
-    foreach ($Name in $PreviousEnvironment.Keys) {
-        [Environment]::SetEnvironmentVariable($Name, $PreviousEnvironment[$Name], 'Process')
-    }
     Pop-Location
 }
