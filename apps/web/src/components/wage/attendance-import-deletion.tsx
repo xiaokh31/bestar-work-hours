@@ -97,7 +97,7 @@ export function AttendanceImportDeleteButton({
       setReason("");
       setImpact(null);
       setStatus(DELETE_STATUS.idle);
-      router.replace(`/work-hours${params.size ? `?${params.toString()}` : ""}`);
+      router.replace(`/${params.size ? `?${params.toString()}` : ""}`);
       router.refresh();
     } catch (error) {
       setStatus(DELETE_STATUS.error);

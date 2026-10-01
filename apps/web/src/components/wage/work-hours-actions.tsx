@@ -56,7 +56,7 @@ export function AttendanceUploadPanel() {
       }
       setFile(null);
       router.push(
-        `/work-hours?attendanceImportId=${encodeURIComponent(result.id)}`,
+        `/?attendanceImportId=${encodeURIComponent(result.id)}`,
       );
       router.refresh();
     } catch (error) {

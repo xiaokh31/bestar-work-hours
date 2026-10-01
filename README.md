@@ -6,6 +6,8 @@
 Next.js 保留原工时页面、品牌、配色、主题和中英文；Python 保留 `wage-attendance-v2` 与正式脱敏模板。
 PostgreSQL 事务保存原件、有效明细、变更记录和生成文件。无旧目录或旧服务依赖。
 
+Vercel 生产入口：[Bestar 工时应用](https://work-hours.bestarcca.com/)。使用独立云数据库，免登录；本机 Docker 数据不会自动同步到云端。
+
 ## Windows 本机验证
 
 按[部署手册](docs/DEPLOYMENT.md)启动 Docker 应用，上传自己的真实打卡表。无需账号，不预装测试员工。导出只包含实际员工表页及模板辅助页。
@@ -27,5 +29,5 @@ docker compose -p bestar-hours-test -f compose.test.yaml up --build --abort-on-c
 ```
 
 2026-10-01：Docker 引擎/API 测试 52 项通过，覆盖未使用员工模板页的移除及公式、格式和打印设置保留。
-真实业务工时对照、Excel 打开与打印预览、实际 Vercel 发布仍需验收，不能据此声称全部完成。
-GitHub 同步只包含代码、可分发文档与正式脱敏模板，不含真实员工记录或数据库。同步代码不等于发布应用；Vercel 部署仍需单独操作。
+Vercel 前后端已于 2026-10-01 实际发布，正式域名与云数据库联通、只读浏览器检查通过。云端真实文件上传至导出、真实业务工时对照、Excel 打开与打印预览仍需验收。
+GitHub 同步只包含代码、可分发文档与正式脱敏模板，不含真实员工记录或数据库。同步代码不等于更新线上应用；当前通过 Vercel CLI 单独发布。

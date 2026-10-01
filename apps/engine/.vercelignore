@@ -8,3 +8,17 @@ api-install.json
 *.egg-info
 __pycache__
 .pytest_cache
+.agents
+.codex
+.claude
+skills-lock.json
+storage
+backups
+*.dump
+*.sqlite*
+*.log
+*.xls
+*.xlsx
+*.xlsm
+*.csv
+!src/bestar_work_hours/templates/wage/bestar-wage-template-v1.xls

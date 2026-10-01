@@ -7,16 +7,18 @@ test("read-only attendance: direct access, existing records/download, themes and
   expect(importsResponse.status()).toBe(200);
   expect((await request.get("/api/auth/me")).status()).toBe(404);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/work-hours/);
+  await expect(page).toHaveURL(url => url.pathname === "/");
   await expect(page.locator('[data-shell-user-cluster], input[type="password"], a[href="/login"]')).toHaveCount(0);
   await expect(page.getByRole("button",{name:/Sign in|Sign out|Log out/})).toHaveCount(0);
   await page.goto("/login");
-  await expect(page).toHaveURL(/\/work-hours/);
+  await expect(page).toHaveURL(url => url.pathname === "/");
   expect((await context.cookies()).some(c=>c.name==="bestar_session")).toBe(false);
   const {items}=await importsResponse.json();
   if(items.length) {
     const id=items[0].id;
+    // Existing saved links retain their selection when redirected to the homepage.
     await page.goto(`/work-hours?attendanceImportId=${encodeURIComponent(id)}`);
+    await expect(page).toHaveURL(url => url.pathname === "/" && url.searchParams.get("attendanceImportId") === id);
     await expect(page.locator('input[type="file"]')).toBeAttached();
     const files=await (await request.get(`/api/attendance-imports/${id}/files`)).json();
     const ready=files.items.find((file: {status:string})=>file.status==="READY");

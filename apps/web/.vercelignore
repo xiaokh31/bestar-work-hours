@@ -5,3 +5,17 @@ tests
 test-results
 playwright-report
 *.tsbuildinfo
+.agents
+.codex
+.claude
+skills-lock.json
+storage
+backups
+*.dump
+*.db
+*.sqlite*
+*.log
+*.xls
+*.xlsx
+*.xlsm
+*.csv

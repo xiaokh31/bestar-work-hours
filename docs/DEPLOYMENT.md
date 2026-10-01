@@ -204,14 +204,55 @@ if ($LASTEXITCODE -ne 0) { throw 'Database restore failed' }
 | 上传同一文件失败 | SHA-256 判重属于正常行为；已删除批次的原件也不会重新导入 |
 
 
-## Vercel：两个项目
+## Vercel：已部署的生产环境
 
-需要用户自己的 Vercel 及托管 PostgreSQL 环境。本项目不会自动创建收费资源或发布。
+2026-10-01 已完成用户授权的首次生产部署：
+
+| 组件 | 地址/配置 |
+| --- | --- |
+| 工时网页 | https://work-hours.bestarcca.com/ |
+| Python API | https://bestar-work-hours-api.vercel.app |
+| 健康检查 | https://work-hours.bestarcca.com/api/health |
+| 云数据库 | 独立 Neon Free，名称 bestar-work-hours-db，新加坡区域 |
+| 函数区域 | 两个项目均配置 sin1 |
+
+工时功能直接位于首页 `/`，无需侧栏或单项导航。旧 `/work-hours` 链接带原查询参数跳转到首页。
+正式入口为 `https://work-hours.bestarcca.com`，Web Production 的 `APP_ORIGIN` 使用同一地址；原 `bestar-work-hours.vercel.app` 地址统一跳转到正式入口。更换域名时同步更新 `APP_ORIGIN` 并重新部署 Web，避免上传被来源校验拒绝。
+
+网页、API 和数据库连接已验证正常。网页免登录，访问同一地址的人共用云端记录；API 业务接口仍要求服务密钥，密钥仅由 Web 服务器发送。
+本次部署使用独立空数据库，不填充测试记录，也没有将本机 Docker 的真实员工数据迁到云端。
+已通过正式域名只读浏览器检查和健康检查；真实上传→解析→导出→下载的云端验收，需使用获准上传到云端的真实文件另行完成。
+
+当前两个项目通过 CLI 分别从 `apps/engine`、`apps/web` 发布，Vercel 项目 Root Directory 留空，因为上传内容已是各自子目录。
+没有自动连接 GitHub 部署。若以后改为从整个 Git 仓库导入，才使用下表中的 Root Directory，并保持生产与 Preview 数据隔离。
+
+### 当前本机更新生产部署
+
+Vercel CLI 62.1.0 保存在项目忽略的缓存中，登录配置在 `storage/vercel-auth`；各应用的 `.vercel/project.json` 记录项目绑定。
+在当前项目根目录的 PowerShell 执行：
+
+```powershell
+$ProjectRoot = (Get-Location).Path
+$VercelCache = Join-Path $ProjectRoot 'storage\vercel-cli-cache'
+$VercelAuth = Join-Path $ProjectRoot 'storage\vercel-auth'
+# 仅发布修改过的组件；后端有变化时先发布后端。
+npx.cmd --yes --cache $VercelCache vercel@62.1.0 deploy --prod --cwd apps/engine --global-config $VercelAuth
+npx.cmd --yes --cache $VercelCache vercel@62.1.0 deploy --prod --cwd apps/web --global-config $VercelAuth
+Invoke-RestMethod -Uri 'https://work-hours.bestarcca.com/api/health'
+```
+
+换机后使用本人 Vercel 登录，并通过 `vercel link` 选择已存在的两个项目，不重新创建数据库。
+`.env.vercel-api` 是本次初始化云数据库使用的忽略文件；不要把其中的配置用于现有本机 Docker 数据库。
+`.vercelignore` 排除了环境文件、员工 Excel、备份、测试产物和本地 agent 工具；正式脱敏 XLS 模板单独保留。
+
+### 其他账户/新环境部署配置
+
+需要用户自己的 Vercel 及托管 PostgreSQL 环境。首次发布需明确授权；不自动新增收费资源。
 使用同区域数据库；连接串包含提供方要求的 TLS 参数（例如 sslmode=require）。生产与 Preview 用不同数据库及密钥。
 
 | 设置 | Python API 项目 | Web 项目 |
 | --- | --- | --- |
-| Root Directory | apps/engine | apps/web |
+| Git 仓库导入时的 Root Directory | apps/engine | apps/web |
 | 框架 | FastAPI | Next.js |
 | 运行时 | Python 3.14（pyproject/.python-version） | Node 24.x（package.json engines） |
 | 入口/构建 | app.py 的 app；框架自动构建 | npm ci / npm run build，默认输出设置 |

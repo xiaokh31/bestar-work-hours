@@ -52,6 +52,7 @@ api-install.json
 *.private.md
 .codex/
 .agents/
+skills-lock.json
 
 # Attendance/payroll files are private by default. Only the approved template ships.
 *.xls
