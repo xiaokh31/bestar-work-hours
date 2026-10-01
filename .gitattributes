@@ -1,0 +1,7 @@
+# Stable cross-platform text; preserve the approved template/manifest bytes.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.ico binary
+*.xls binary
+/apps/engine/src/bestar_work_hours/templates/wage/bestar-wage-template-v1.json -text

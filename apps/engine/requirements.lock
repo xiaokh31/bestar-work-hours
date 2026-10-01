@@ -1,0 +1,4 @@
+# Pinned versions and artifact hashes from the source uv.lock; no source path at runtime.
+xlrd==2.0.2 --hash=sha256:08b5e25de58f21ce71dc7db3b3b8106c1fa776f3024c54e45b45b374e89234c9 --hash=sha256:ea762c3d29f4cca48d82df517b6d89fbce4db3107f9d78713e48cd321d5c9aa9
+xlwt==1.3.0 --hash=sha256:c59912717a9b28f1a3c2a98fd60741014b06b043936dcecbc113eaaada156c88 --hash=sha256:a082260524678ba48a297d922cc385f58278b8aa68741596a87de01a9c628b2e
+tzdata==2026.2 --hash=sha256:9173fde7d80d9018e02a662e168e5a2d04f87c41ea174b139fbef642eda62d10 --hash=sha256:bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7

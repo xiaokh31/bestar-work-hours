@@ -1,0 +1,71 @@
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.next/
+dist/
+build/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+test-results/
+playwright-report/
+.vercel/
+
+# Local configuration and private data
+.env
+.env.*
+!.env.example
+!.env.*.example
+.secrets/
+storage/
+backups/
+samples/private/
+*.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+
+# Python package metadata
+*.egg-info/
+
+api-install.json
+*.db
+*.db-shm
+*.db-wal
+
+*.tsbuildinfo
+
+# Workstation-only agent instructions, handoff and development evidence
+/AGENTS.md
+/HANDOFF.md
+/docs/SOURCE-MAP.md
+/docs/IMPLEMENTATION-PLAN.md
+/docs/verification/
+/docs/private/
+*.local.md
+*.private.md
+.codex/
+.agents/
+
+# Attendance/payroll files are private by default. Only the approved template ships.
+*.xls
+*.xlsx
+*.xlsm
+*.csv
+!/apps/engine/src/bestar_work_hours/templates/wage/bestar-wage-template-v1.xls
+
+# Database exports and credentials, even if accidentally saved outside storage/
+*.dump
+*.sql
+*.bak
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12

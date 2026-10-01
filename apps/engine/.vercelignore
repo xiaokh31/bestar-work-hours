@@ -1,0 +1,10 @@
+.venv
+dist
+build
+tests
+.env*
+api-install.json
+*.db
+*.egg-info
+__pycache__
+.pytest_cache

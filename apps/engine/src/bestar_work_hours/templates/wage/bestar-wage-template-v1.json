@@ -1,0 +1,27 @@
+{
+  "privacy_contract": {
+    "historical_business_values": 0,
+    "historical_dates": 0,
+    "metadata_non_zero_bytes": 0,
+    "unapproved_personal_values": 0
+  },
+  "schema_version": 1,
+  "source_reference_sha256": "6f2fb31f54e7cca39e696c11e8891f0a6e36041c28b98f1d287f703f9ecf375a",
+  "structure": {
+    "colinfo_count": 4352,
+    "employee_slot_count": 16,
+    "formula_count": 284,
+    "merge_count": 58,
+    "rowinfo_count": 603,
+    "sheet_count": 17,
+    "xf_count": 107
+  },
+  "style_contract": {
+    "weekday_column": {
+      "weekday_xf_index": 83,
+      "weekend_xf_index": 87
+    }
+  },
+  "template_sha256": "f9e11d6f2c6f45b0453f8346df2ff8347f2e6f5c8b7505a642367f1dade4206c",
+  "template_version": "bestar-wage-template-v1"
+}

@@ -1,0 +1,23 @@
+Bestar Work Hours
+
+This project contains work adapted from Bestar stripSystem, reference commit
+1608420b6f5cd160624012b105cb5069261aa569, under the Apache License 2.0.
+The applicable license is reproduced in LICENSE.
+
+Extracted components: attendance calculation and parsing, wage-record generation,
+legacy BIFF editing, approved sanitized template and manifest, operational time,
+SHA-256 helpers, selected regression tests, scoped Work Hours UI and DTOs,
+OfficeShell, CSS/theme/language components and brand assets.
+
+Standalone modifications: Python import namespace and packaged template paths;
+LF template manifest output; serialization, packaging and development CLI;
+persistent attendance API and revision/audit storage; removal of login/roles;
+scoped navigation, same-origin proxy, direct parsing/generation, correction UI,
+file download links and pagination; local Docker and Vercel configurations.
+Synthetic fixtures replace private sample dependencies. No historical payroll
+workbook or employee attendance sample is distributed.
+
+Source modules in the reference project: apps/worker-python/src/worker_python/
+wage/{attendance,generator,legacy_xls,template}.py and apps/web/src/.
+The approved template originates from apps/worker-python/templates/wage/.
+See docs/ENGINE-MIGRATION.md in the repository for migration details.

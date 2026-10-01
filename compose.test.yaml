@@ -1,0 +1,20 @@
+# Isolated synthetic verification stack. Never use these credentials for deployment.
+services:
+  database:
+    image: postgres:17.9-bookworm
+    environment:
+      POSTGRES_USER: synthetic
+      POSTGRES_PASSWORD: synthetic-only
+      POSTGRES_DB: synthetic_test
+    tmpfs: /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U synthetic -d synthetic_test]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  engine-tests:
+    build: { context: ./apps/engine, target: test }
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://synthetic:synthetic-only@database/synthetic_test
+    depends_on:
+      database: { condition: service_healthy }
